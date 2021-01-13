@@ -128,3 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .idea
+
+hs300_stocks.csv
+sz50_stocks.csv
+zz500_stocks.csv

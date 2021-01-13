@@ -20,7 +20,6 @@ while (rs.error_code == '0') & rs.next():
 result = pd.DataFrame(hs300_stocks, columns=rs.fields)
 # 结果集输出到csv文件
 result.to_csv("hs300_stocks.csv", encoding="utf-8", index=False)
-print(result)
 
 # 登出系统
 bs.logout()
