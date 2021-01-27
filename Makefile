@@ -8,3 +8,6 @@ requirements:
 
 install_requirements:
 	pip install -r requirements.txt
+
+debug:
+	uvicorn src.main:app --reload
