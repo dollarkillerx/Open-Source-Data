@@ -10,4 +10,7 @@ install_requirements:
 	pip install -r requirements.txt
 
 debug:
-	uvicorn src.main:app --reload
+	@uvicorn src.main:app --reload
+
+run:
+	@uvicorn src.main:app

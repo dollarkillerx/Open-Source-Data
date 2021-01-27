@@ -9,6 +9,8 @@ make install_requirements
 
 ### run
 ``` 
+make run
+or
 make debug
 ```
 
