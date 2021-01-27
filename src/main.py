@@ -25,11 +25,14 @@ def history_stocks(stock_info: StockInfo, response: Response):
         bs.login()
         frequency = "d"
         adjust_flag = "3"
+        query = "date,code,open,high,low,close,volume,amount,adjustflag"
 
         if stock_info.type == 0:
             frequency = "d"
+            query = "date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,peTTM,pbMRQ,psTTM,pcfNcfTTM,isST"
         elif stock_info.type == 1:
             frequency = "w"
+            query = "date,code,open,high,low,close,volume,amount,adjustflag,turn,pctChg"
         elif stock_info.type == 2:
             frequency = "60"
 
@@ -39,8 +42,9 @@ def history_stocks(stock_info: StockInfo, response: Response):
             adjust_flag = "1"
         elif stock_info.restoration == 2:
             adjust_flag = "2"
+
         rs = bs.query_history_k_data_plus(stock_info.id,
-                                          "date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,peTTM,pbMRQ,psTTM,pcfNcfTTM,isST",
+                                          query,
                                           start_date=stock_info.start_time, end_date=stock_info.end_time,
                                           frequency=frequency,
                                           adjustflag=adjust_flag)  # frequency="d"取日k线，adjustflag="3"默认不复权
@@ -52,7 +56,6 @@ def history_stocks(stock_info: StockInfo, response: Response):
 
         data_list = []
         while (rs.error_code == '0') & rs.next():
-            # 获取一条记录，将记录合并在一起
             data_list.append(rs.get_row_data())
         return option.standard_return(data_list, True, None)
     except Exception as e:
