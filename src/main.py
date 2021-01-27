@@ -54,12 +54,12 @@ def history_stocks(stock_info: StockInfo, response: Response):
 
         if rs.error_code != "0":
             response.status_code = 500
-            return option.standard_return(None, False, rs.error_msg)
+            return option.standard_return(None, False, rs.error_msg, query)
 
         data_list = []
         while (rs.error_code == '0') & rs.next():
             data_list.append(rs.get_row_data())
-        return option.standard_return(data_list, True, None)
+        return option.standard_return(data_list, True, None, query)
     except Exception as e:
         response.status_code = 500
-        return option.standard_return(None, False, e)
+        return option.standard_return(None, False, e, query)

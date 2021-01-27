@@ -1,12 +1,14 @@
-def standard_return(data, success: bool, err):
+def standard_return(data, success: bool, err, query: str):
     if success:
         return {
             "data": data,
-            "success": True
+            "success": True,
+            "query": query,
         }
     return {
         "data": err,
-        "success": False
+        "success": False,
+        "query": query,
     }
 
 
