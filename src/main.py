@@ -15,7 +15,7 @@ class StockInfo(BaseModel):
     id: str
     start_time: str
     end_time: str
-    type: int  # 0 日key 1 周k  2 1小时k
+    type: int  # 0 日key 1 周k  2 1小时k  3 30分钟K
     restoration: int  # 0 原始 1 前复权 2 后复权
 
 
@@ -35,6 +35,8 @@ def history_stocks(stock_info: StockInfo, response: Response):
             query = "date,code,open,high,low,close,volume,amount,adjustflag,turn,pctChg"
         elif stock_info.type == 2:
             frequency = "60"
+        elif stock_info.type == 3:
+            frequency = "30"
 
         if stock_info.restoration == 0:
             adjust_flag = "3"
