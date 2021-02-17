@@ -39,7 +39,8 @@ GET: `history_fund/:fund_id`
 ### TOP100 funds rank
 GET: `/funds_rank`
 
-
+### fund 持仓信息
+GET: `/fund_portfolio_hold/:fund_id`
 
 ### 依赖
 - fast_api
