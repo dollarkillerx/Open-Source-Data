@@ -9,7 +9,7 @@ def get_time():
     return dt
 
 
-# 股票代码格式化 akShare
+# 股票代码格式化 akShare   sh.000300 => sh000300
 async def stock_id_ps_ak(stock_id: str):
     idx = stock_id.find(".")
     return stock_id[:idx] + stock_id[idx+1:]

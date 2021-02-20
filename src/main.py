@@ -179,32 +179,191 @@ async def fund_portfolio_hold(fund_id: str, response: Response):
         return e
 
 
-# 分时数据
-@app.get("/fund_portfolio_hold/{fund_id}", status_code=200)
-async def stocks_minute(response: Response):
+class StockTickInfo(BaseModel):
+    id: str  # 股票代码
+    type: int  # 1,5,15,30,60 min
+    restoration: int  # 0 原始 1 前复权 2 后复权
+
+
+# 获得近5个月分时数据
+@app.post("/stock/tick", status_code=200)
+async def stocks_tick(stock_info: StockTickInfo, response: Response):
+    symbol = stock_info.id
+    period = "1"
+    adjust = ""
+    if stock_info.type == 5:
+        period = "5"
+    elif stock_info.type == 15:
+        period = "15"
+    elif stock_info.type == 30:
+        period = "30"
+    elif stock_info.type == 60:
+        period = "60"
+
+    if stock_info.restoration == 1:
+        adjust = "qfq"
+    elif stock_info.restoration == 2:
+        adjust = "hfq"
+
     try:
-        fund_em_open_fund_rank_df = ak.fund_em_open_fund_rank(symbol="全部")
+        symbol = await utils.stock_id_ps_ak(symbol)
+        fund_em_open_fund_rank_df = ak.stock_zh_a_minute(symbol=symbol, period=period, adjust=adjust)
         resp = []
         idx = 0
-        for i in fund_em_open_fund_rank_df['基金代码']:
-            resp.append({"fund_id": i})
+        for i in fund_em_open_fund_rank_df['day']:
+            resp.append({"day": i})
             idx += 1
-            if idx >= 100:
-                break
 
         idx = 0
-        for i in fund_em_open_fund_rank_df['基金简称']:
-            resp[idx]['fund_name'] = i
+        for i in fund_em_open_fund_rank_df['open']:
+            resp[idx]['open'] = i
             idx += 1
-            if idx >= 100:
-                break
+
+        idx = 0
+        for i in fund_em_open_fund_rank_df['high']:
+            resp[idx]['high'] = i
+            idx += 1
+
+        idx = 0
+        for i in fund_em_open_fund_rank_df['low']:
+            resp[idx]['low'] = i
+            idx += 1
+
+        idx = 0
+        for i in fund_em_open_fund_rank_df['close']:
+            resp[idx]['close'] = i
+            idx += 1
+
+        idx = 0
+        for i in fund_em_open_fund_rank_df['volume']:
+            resp[idx]['volume'] = i
+            idx += 1
 
         return resp
     except Exception as e:
         response.status_code = 400
         return e
 
-# 历史分笔数据
+
+# class StockHistoryTickInfo(BaseModel):
+#     id: str  # 股票代码
+#     trade_data: str  # 20191011 start time
+#     # type: int  # 1,5,15,30,60 min
+#     # restoration: int  # 0 原始 1 前复权 2 后复权
+
+
+# # 历史分笔数据(近 2 年历史分笔行情数据)  http://quotes.money.163.com/service/zhubi_ajax.html?symbol=000001  未来考虑抽码分布
+# @app.post("/stock/history_tick", status_code=200)
+# async def stock_history_tick(stock_info: StockHistoryTickInfo, response: Response):
+#     try:
+#         # symbol = await utils.stock_id_ps_ak(stock_info.id)
+#         # fund_em_open_fund_rank_df = ak.stock_zh_a_tick_163(code=symbol, trade_date=stock_info.trade_data)
+#         fund_em_open_fund_rank_df = ak.stock_zh_a_tick_163(code="sh600848", trade_date="20210128")
+#         resp = []
+#         idx = 0
+#         print(len(fund_em_open_fund_rank_df))
+#         # for i in fund_em_open_fund_rank_df['day']:
+#         #     resp.append({"day": i})
+#         #     idx += 1
+#         #
+#         # idx = 0
+#         # for i in fund_em_open_fund_rank_df['open']:
+#         #     resp[idx]['open'] = i
+#         #     idx += 1
+#         #
+#         # idx = 0
+#         # for i in fund_em_open_fund_rank_df['high']:
+#         #     resp[idx]['high'] = i
+#         #     idx += 1
+#         #
+#         # idx = 0
+#         # for i in fund_em_open_fund_rank_df['low']:
+#         #     resp[idx]['low'] = i
+#         #     idx += 1
+#         #
+#         # idx = 0
+#         # for i in fund_em_open_fund_rank_df['close']:
+#         #     resp[idx]['close'] = i
+#         #     idx += 1
+#         #
+#         # idx = 0
+#         # for i in fund_em_open_fund_rank_df['volume']:
+#         #     resp[idx]['volume'] = i
+#         #     idx += 1
+#
+#         return resp
+#     except Exception as e:
+#         response.status_code = 400
+#         return e
+
+# 分析师指数排名
+@app.get("/fraudster/index/ranking", status_code=200)
+async def fraudster_index_ranking(response: Response):
+    try:
+        stock_em_analyst_rank_df = ak.stock_em_analyst_rank()
+        resp = []
+
+        for i in stock_em_analyst_rank_df.values:
+            resp.append({
+                "序号": i[0],
+                '分析师名称': i[1],
+                '分析师单位': i[2],
+                '年度指数': i[3],
+                '收益率': i[4],
+                '3个月收益率': i[5],
+                '6个月收益率': i[6],
+                '12个月收益率': i[7],
+                '成分股个数': i[8],
+                '最新个股评级': i[9],
+                '分析师ID': i[10],
+            })
+
+        return resp
+    except Exception as e:
+        response.status_code = 400
+        return e
+
+
+# 分析师详情 (最新跟踪成分股, 历史跟踪成分股)
+@app.get("/fraudster/info/{fraudster_id}", status_code=200)
+async def fraudster_info(fraudster_id: str, response: Response):
+    try:
+        latest_tracking_constituent = ak.stock_em_analyst_detail(analyst_id=fraudster_id, indicator="最新跟踪成分股")
+        latest_tracking_constituents = []
+        for i in latest_tracking_constituent.values:
+            latest_tracking_constituents.append({
+                "序号": i[0],
+                '股票代码': i[1],
+                '股票名称': i[2],
+                '调入日期': i[3],
+                '最新评级日期': i[4],
+                '当前评级名称': i[5],
+                '成交价格(前复权)': i[6],
+                '最新价格': i[7],
+                '阶段涨跌幅': i[8],
+            })
+
+        history_tracking_constituent = ak.stock_em_analyst_detail(analyst_id=fraudster_id, indicator="历史跟踪成分股")
+        history_tracking_constituents = []
+        for i in history_tracking_constituent.values:
+            history_tracking_constituents.append({
+                "序号": i[0],
+                '股票代码': i[1],
+                '股票名称': i[2],
+                '调入日期': i[3],
+                '调出日期': i[4],
+                '调入时评级名称': i[5],
+                '调出原因': i[6],
+                '累计涨跌幅': i[7],
+            })
+
+        return {
+            "latest_tracking_constituents": latest_tracking_constituents,
+            "history_tracking_constituents": history_tracking_constituents,
+        }
+    except Exception as e:
+        response.status_code = 400
+        return e
 
 # 年报季报
 

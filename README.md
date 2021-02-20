@@ -42,6 +42,16 @@ GET: `/funds_rank`
 ### fund 持仓信息
 GET: `/fund_portfolio_hold/:fund_id`
 
+### 获得近5个月分时数据
+POST： `/stock/tick`
+```JSON
+{
+    "id": "sh000300",  # 股票代码
+    "type": 1,         # 1,5,15,30,60 min
+    "restoration": 0   # 0 原始 1 前复权 2 后复权
+}
+```
+
 ### 依赖
 - fast_api
 - nvicorn
