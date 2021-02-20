@@ -52,6 +52,18 @@ POST： `/stock/tick`
 }
 ```
 
+### 分析师指数排名
+GET: `/fraudster/index/ranking`
+
+### 分析师详情 (最新跟踪成分股, 历史跟踪成分股)
+GET： `/fraudster/info/:fraudster_id`
+
+### 千股千评 `http://data.eastmoney.com/stockcomment/`
+GET: `/stock_comments`
+
+### 个股资金流
+GET: `/stock_financial_flows/:stock_id`
+
 ### 依赖
 - fast_api
 - nvicorn

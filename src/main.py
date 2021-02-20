@@ -305,17 +305,17 @@ async def fraudster_index_ranking(response: Response):
 
         for i in stock_em_analyst_rank_df.values:
             resp.append({
-                "序号": i[0],
-                '分析师名称': i[1],
-                '分析师单位': i[2],
-                '年度指数': i[3],
-                '收益率': i[4],
-                '3个月收益率': i[5],
-                '6个月收益率': i[6],
-                '12个月收益率': i[7],
-                '成分股个数': i[8],
-                '最新个股评级': i[9],
-                '分析师ID': i[10],
+                "serial_number": i[0],  # 序号
+                'analyst_name': i[1],  # 分析师名称
+                'analyst_unit': i[2],  # 分析师单位
+                'annual_index': i[3],  # 年度指数
+                'yield': i[4],  # 收益率
+                '3_months_yield': i[5],  # 3个月收益率
+                '6_months_yield': i[6],  # 6个月收益率
+                '12_months_yield': i[7],  # 12个月收益率
+                'number_constituent_stocks': i[8],  # 成分股个数
+                'latest_stock_ratings': i[9],  # 最新个股评级
+                'analyst_id': i[10],  # 分析师ID
             })
 
         return resp
@@ -332,29 +332,29 @@ async def fraudster_info(fraudster_id: str, response: Response):
         latest_tracking_constituents = []
         for i in latest_tracking_constituent.values:
             latest_tracking_constituents.append({
-                "序号": i[0],
-                '股票代码': i[1],
-                '股票名称': i[2],
-                '调入日期': i[3],
-                '最新评级日期': i[4],
-                '当前评级名称': i[5],
-                '成交价格(前复权)': i[6],
-                '最新价格': i[7],
-                '阶段涨跌幅': i[8],
+                'serial_number': i[0],  # 序号
+                'stock_code': i[1],  # 股票代码
+                'stock_name': i[2],  # 股票名称
+                'date_transfer_in': i[3],  # 调入日期
+                'latest_rating_date': i[4],  # 最新评级日期
+                'current_rating_name': i[5],  # 当前评级名称
+                'transaction_price': i[6],  # 成交价格(前复权)
+                'latest_prices': i[7],  # 最新价格
+                'phase_up_or_down': i[8],  # 阶段涨跌幅
             })
 
         history_tracking_constituent = ak.stock_em_analyst_detail(analyst_id=fraudster_id, indicator="历史跟踪成分股")
         history_tracking_constituents = []
         for i in history_tracking_constituent.values:
             history_tracking_constituents.append({
-                "序号": i[0],
-                '股票代码': i[1],
-                '股票名称': i[2],
-                '调入日期': i[3],
-                '调出日期': i[4],
-                '调入时评级名称': i[5],
-                '调出原因': i[6],
-                '累计涨跌幅': i[7],
+                "serial_number": i[0],  # 序号
+                'stock_code': i[1],  # 股票代码
+                'stock_name': i[2],  # 股票名称
+                'date_transfer_in': i[3],  # 调入日期
+                'date_transfer_out': i[4],  # 调出日期
+                'name_of_rating_on_transfer_ins': i[5],  # 调入时评级名称
+                'reason_transfer_out': i[6],  # 调出原因
+                'cumulative_increase_or_decrease': i[7],  # 累计涨跌幅
             })
 
         return {
@@ -365,9 +365,71 @@ async def fraudster_info(fraudster_id: str, response: Response):
         response.status_code = 400
         return e
 
+
+# 千股千评 http://data.eastmoney.com/stockcomment/
+@app.get("/stock_comments", status_code=200)
+async def stock_comments(response: Response):
+    try:
+        stock_em_comment_df = ak.stock_em_comment()
+        stock_em_comment_dfs = []
+        for i in stock_em_comment_df.values:
+            stock_em_comment_dfs.append({
+                "date": i[0],  # 日期时间
+                'code': i[1],  # 股票code
+                'name': i[2],  # 股票名称
+                'new': i[3],  # 最新价
+                'change_percent': i[4],  # 涨跌幅
+                'pr_ration': i[5],  # 市盈率
+                'turnover_rate': i[6],  # 换手率(注意%)
+                'zlcb': i[7],  # 主力成本
+                'jgcyd': i[8],  # 机构参与度
+                'jgcyd_type': i[9],  # 机构参与度类型
+                'zlcb_20r': i[10],  # 主力成本20日
+                'zlcb_60r': i[11],  # 主力成本60日
+                'market': i[17],  # 市场类型
+                'total_score': i[18],  # 综合得分
+                'ranking_up': i[19],  # 上升
+                'ranking': i[20],  # 目前排名
+                'focus': i[21],  # 关注指数
+            })
+
+        return stock_em_comment_dfs
+    except Exception as e:
+        response.status_code = 400
+        return e
+
+
 # 年报季报
 
+
 # 个股资金流
+@app.get("/stock_financial_flows/{stock_id}", status_code=200)
+async def stock_financial_flows(stock_id: str, response: Response):
+    try:
+        market, stock = await utils.stock_id_sp_ak(stock_id)
+        stock_individual_fund_flow_df = ak.stock_individual_fund_flow(stock=stock, market=market)
+        stock_individual_fund_flow_dfs = []
+        for i in stock_individual_fund_flow_df.values:
+            stock_individual_fund_flow_dfs.append({
+                "date": i[0],  # 日期时间
+                'net_main_inflow_net': i[1],  # 主力净流入-净额
+                'net_small_order_inflow_net': i[2],  # 小单净流入-净额
+                'net_medium_inflow_net': i[3],  # 中单净流入-净额
+                'net_big_inflow_net': i[4],  # 大单净流入-净额
+                'net_supper_big_inflow_net': i[5],  # 超大单净流入-净额
+                'net_main_inflow_net_share': i[6],  # 主力净流入-净占比
+                'net_small_inflow_net_share': i[7],  # 小单净流入-净占比
+                'net_medium_inflow_net_share': i[8],  # 中单净流入-净占比
+                'net_big_inflow_net_share': i[9],  # 大单净流入-净占比
+                'net_supper_big_inflow_net_share': i[10],  # 超大单净流入-净占比
+                'closing_price': i[11],  # 收盘价
+                'up_or_down': i[12],  # 涨跌幅
+            })
+
+        return stock_individual_fund_flow_dfs
+    except Exception as e:
+        response.status_code = 400
+        return e
 
 # 个股资金流排名
 

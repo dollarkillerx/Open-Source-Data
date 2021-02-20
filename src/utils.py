@@ -12,4 +12,10 @@ def get_time():
 # 股票代码格式化 akShare   sh.000300 => sh000300
 async def stock_id_ps_ak(stock_id: str):
     idx = stock_id.find(".")
-    return stock_id[:idx] + stock_id[idx+1:]
+    return stock_id[:idx] + stock_id[idx + 1:]
+
+
+# 股票代码格式化 akShare 拆分   sh.000300 => sh, 000300
+async def stock_id_sp_ak(stock_id: str):
+    idx = stock_id.find(".")
+    return stock_id[:idx], stock_id[idx + 1:]
