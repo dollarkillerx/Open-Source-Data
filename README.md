@@ -64,6 +64,11 @@ GET: `/stock_comments`
 ### 个股资金流
 GET: `/stock_financial_flows/:stock_id`
 
+### 个股资金流排名
+GET: `/stock_individual_fund_flow_rank/:indicator_idx`
+
+
+
 ### 依赖
 - fast_api
 - nvicorn

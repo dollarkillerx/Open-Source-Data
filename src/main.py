@@ -431,11 +431,121 @@ async def stock_financial_flows(stock_id: str, response: Response):
         response.status_code = 400
         return e
 
-# 个股资金流排名
 
-# 大盘资金流
+# 个股资金流排名
+@app.get("/stock_individual_fund_flow_rank/{indicator_idx}", status_code=200)
+async def stock_individual_fund_flow_rank(indicator_idx: str, response: Response):
+    try:
+        indicator = "今日"
+        if indicator_idx == "1":
+            indicator = "3日"
+        elif indicator_idx == "2":
+            indicator = "5日"
+        elif indicator_idx == "3":
+            indicator = "10日"
+        stock_individual_fund_flow_df = ak.stock_individual_fund_flow_rank(indicator=indicator)
+        stock_individual_fund_flow_dfs = []
+        for i in stock_individual_fund_flow_df.values:
+            stock_individual_fund_flow_dfs.append({
+                "latest_price": i[0],  # 最新价
+                'up_or_down': i[1],  # 涨跌幅
+                'code': i[2],  # 代码
+                'stock_name': i[3],  # 名称
+                'main_net_inflow_net': i[4],  # 主力净流入-净额
+                'main_net_inflow_net_share': i[5],  # 主力净流入-净占比
+                'ultra_large_net_inflow-net': i[6],  # 超大单净流入-净额
+                'super_large_single_net_inflow_net_share': i[7],  # 超大单净流入-净占比
+                'large_net_inflow__net': i[8],  # 大单净流入-净额
+                'large_single_net_inflow_net_share': i[9],  # 大单净流入-净占比
+                'net_inflow_medium_orders_net': i[10],  # 中单净流入-净额
+                'net_inflow_medium_orders_net_share': i[11],  # 中单净流入-净占比
+                'net_small_order_inflow_net': i[12],  # 小单净流入-净额
+                'small_single_net_inflow_net_share': i[13],  # 小单净流入-净占比
+            })
+
+        return stock_individual_fund_flow_dfs
+    except Exception as e:
+        response.status_code = 400
+        return e
+
+
+# 板块资金流排名
+@app.get("/stock_sector_fund_flow_rank/{indicator_idx}", status_code=200)
+async def stock_sector_fund_flow_rank(indicator_idx: str, response: Response):
+    try:
+        indicator = "今日"
+        if indicator_idx == "1":
+            indicator = "3日"
+        elif indicator_idx == "2":
+            indicator = "5日"
+        elif indicator_idx == "3":
+            indicator = "10日"
+        stock_individual_fund_flow_df = ak.stock_sector_fund_flow_rank(indicator=indicator, sector_type="行业资金流")
+        stock_individual_fund_flow_dfs = []
+        for i in stock_individual_fund_flow_df.values:
+            stock_individual_fund_flow_dfs.append({
+                "latest_price": i[0],  # 最新价
+                'up_or_down': i[1],  # 涨跌幅
+                'code': i[2],  # 代码
+                'stock_name': i[3],  # 名称
+                'main_net_inflow_net': i[4],  # 主力净流入-净额
+                'main_net_inflow_net_share': i[5],  # 主力净流入-净占比
+                'ultra_large_net_inflow-net': i[6],  # 超大单净流入-净额
+                'super_large_single_net_inflow_net_share': i[7],  # 超大单净流入-净占比
+                'large_net_inflow__net': i[8],  # 大单净流入-净额
+                'large_single_net_inflow_net_share': i[9],  # 大单净流入-净占比
+                'net_inflow_medium_orders_net': i[10],  # 中单净流入-净额
+                'net_inflow_medium_orders_net_share': i[11],  # 中单净流入-净占比
+                'net_small_order_inflow_net': i[12],  # 小单净流入-净额
+                'small_single_net_inflow_net_share': i[13],  # 小单净流入-净占比
+            })
+
+        return stock_individual_fund_flow_dfs
+    except Exception as e:
+        response.status_code = 400
+        return e
+
 
 # 财务报表
+@app.get("/stock_financial_report/{stock_code}", status_code=200)
+async def stock_financial_report(stock_code: str, response: Response):
+    try:
+        market, stock_code = await utils.stock_id_sp_ak(stock_code)
+        balance_sheet = ak.stock_financial_report_sina(stock=stock_code)
+        balance_sheets = []
+        print(balance_sheet.to_json(orient='split'))
+        # for i in balance_sheet.values:
+        #     balance_sheets.append({
+        #         "statement_date": i[0],  # 报表日期
+        #         'Monetary Unit': i[1],  # 单位
+        #         'code': i[2],  # 经营活动产生的现金流量
+        #         'stock_name': i[3],  # 提供劳务收到的现金
+        #         'main_net_inflow_net': i[4],  # 收到的税费返还
+        #         'main_net_inflow_net_share': i[5],  # 收到的其他与经营活动有关的现金
+        #         'ultra_large_net_inflow-net': i[6],  # 经营活动现金流入小计
+        #         'super_large_single_net_inflow_net_share': i[7],  # 购买商品、接受劳务支付的现金
+        #         'large_net_inflow__net': i[8],  # 支付给职工以及为职工支付的现金
+        #         'large_single_net_inflow_net_share': i[9],  # 支付的各项税费
+        #         'net_inflow_medium_orders_net': i[10],  # 支付的其他与经营活动有关的现金
+        #         'net_inflow_medium_orders_net_share': i[11],  # 经营活动现金流出小计
+        #         'net_small_order_inflow_net': i[12],  # 经营活动产生的现金流量净额
+        #         'small_single_net_inflow_net_share': i[13],  # 投资活动产生的现金流量
+        #         'small_single_net_inflow_net_share': i[13],  # 收回投资所收到的现金
+        #         'small_single_net_inflow_net_share': i[13],  # 取得投资收益所收到的现金
+        #         'small_single_net_inflow_net_share': i[13],  # 处置固定资产、无形资产和其他长期资产所收回的现金净额
+        #         'small_single_net_inflow_net_share': i[13],  # 处置子公司及其他营业单位收到的现金净额
+        #         'small_single_net_inflow_net_share': i[13],  # 投资活动产生的现金流量
+        #         'small_single_net_inflow_net_share': i[13],  # 投资活动产生的现金流量
+        #         'small_single_net_inflow_net_share': i[13],  # 投资活动产生的现金流量
+        #     })
+
+        return {
+            "balance_sheet": balance_sheets,
+        }
+    except Exception as e:
+        response.status_code = 400
+        return e
+
 
 # 财务摘要
 
