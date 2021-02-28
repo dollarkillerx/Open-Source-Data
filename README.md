@@ -124,6 +124,10 @@ GET: `/stock_institute_recommend_detail/{stock_code}`
 GET: `/stock_institute_recommend/:indicator`
 indicator: 1 行业关注度, 2 最新投资评级, 3 上调评级股票, 4 下调评级股票,5 股票综合评级,6 首次评级股票,7 首次评级股票,8 机构关注度,9 行业关注度,10 投资评级选股
 
+### 活跃A股统计
+GET: `/stock_active_a_share/{period}`
+period: 1 近一月, 2 近三月, 3 近六月,4 近一年
+
 ### 依赖
 - fast_api
 - nvicorn

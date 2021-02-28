@@ -782,7 +782,69 @@ async def stock_institute_recommend_detail(stock_code: str, response: Response):
 
 
 # 龙虎榜
+# 龙虎榜-每日详情
+# @app.get("/stock_lhb_daily_details/{stock_code}", status_code=200)
+# async def stock_institute_recommend_detail(stock_code: str, response: Response):
+#     try:
+#         market, stock_code = await utils.stock_id_sp_ak(stock_code)
+#         stock_institute_recommend_detail_df = ak.stock_institute_recommend_detail(stock=stock_code)
+#         stock_institute_recommend_detail_dfs = []
+#         for i in stock_institute_recommend_detail_df.values:
+#             stock_institute_recommend_detail_dfs.append({
+#                 "stock_code": i[0],  # 股票代码
+#                 "stock_name": i[1],  # 股票名称
+#                 'target_price': i[2],  # 目标价
+#                 'latest_ratings': i[3],  # 最新评级
+#                 'rating_agencies': i[4],  # 评级机构
+#                 'fraudster': i[5],  # 分析师
+#                 'industry': i[6],  # 行业
+#                 'rating_date': i[3],  # 评级日期
+#             })
+#
+#         r = json.dumps(stock_institute_recommend_detail_dfs)
+#         return Response(content=r, media_type="application/json")
+#     except Exception as e:
+#         response.status_code = 400
+#         return e
+#
 
 # 活跃A股统计
+@app.get("/stock_active_a_share/{period}", status_code=200)
+async def stock_active_a_share(period: str, response: Response):
+    try:
+        period_str = "近一月"
+        if period == "2":
+            period_str = "近三月"
+        elif period == "3":
+            period_str = "近六月"
+        elif period == "4":
+            period_str = "近一年"
 
-# 企业社会责任
+        stock_dzjy_hygtj_df = ak.stock_dzjy_hygtj(period=period_str)
+        stock_dzjy_hygtj_dfs = []
+        for i in stock_dzjy_hygtj_df.values:
+            stock_dzjy_hygtj_dfs.append({
+                "num": i[0],  # 序号
+                "stock_code": i[1],  # 股票代码
+                "stock_name": i[1],  # 证券简称
+                'latest_price': i[2],  # 最新价
+                'up_down': i[3],  # 涨跌幅
+                'latest_listed_days': i[4],  # 最近上榜日
+                'number_listings_total': i[5],  # 上榜次数-总计
+                'number_listings_premium': i[6],  # 上榜次数-溢价
+                'number_listings_discount': i[3],  # 上榜次数-折价
+                'total_turnover': i[3],  # 总成交额
+                'discount_rate': i[3],  # 折溢率
+                'total_turnover_market_capitalization_outstanding': i[3],  # 成交总额/流通市值
+                'decrease_after_list_date_1_day': i[3],  # 上榜日后平均涨跌幅-1日
+                'decrease_after_list_date_5_day': i[3],  # 上榜日后平均涨跌幅-5日
+                'decrease_after_list_date_10_day': i[3],  # 上榜日后平均涨跌幅-10日
+                'decrease_after_list_date_20_day': i[3],  # 上榜日后平均涨跌幅-20日
+            })
+
+        return stock_dzjy_hygtj_dfs
+        # r = json.dumps(stock_institute_recommend_detail_dfs)
+        # return Response(content=r, media_type="application/json")
+    except Exception as e:
+        response.status_code = 400
+        return e
