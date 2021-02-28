@@ -4,6 +4,7 @@ import baostock as bs
 import src.option as option
 import akshare as ak
 import src.utils as utils
+import json
 
 app = FastAPI()
 
@@ -506,41 +507,24 @@ async def stock_sector_fund_flow_rank(indicator_idx: str, response: Response):
         return e
 
 
-# 财务报表
-@app.get("/stock_financial_report/{stock_code}", status_code=200)
-async def stock_financial_report(stock_code: str, response: Response):
-    try:
-        market, stock_code = await utils.stock_id_sp_ak(stock_code)
-        balance_sheet = ak.stock_financial_report_sina(stock=stock_code)
-        balance_sheets = []
-        print(balance_sheet.to_json(orient='split'))
-        # for i in balance_sheet.values:
-        #     balance_sheets.append({
-        #         "statement_date": i[0],  # 报表日期
-        #         'Monetary Unit': i[1],  # 单位
-        #         'code': i[2],  # 经营活动产生的现金流量
-        #         'stock_name': i[3],  # 提供劳务收到的现金
-        #         'main_net_inflow_net': i[4],  # 收到的税费返还
-        #         'main_net_inflow_net_share': i[5],  # 收到的其他与经营活动有关的现金
-        #         'ultra_large_net_inflow-net': i[6],  # 经营活动现金流入小计
-        #         'super_large_single_net_inflow_net_share': i[7],  # 购买商品、接受劳务支付的现金
-        #         'large_net_inflow__net': i[8],  # 支付给职工以及为职工支付的现金
-        #         'large_single_net_inflow_net_share': i[9],  # 支付的各项税费
-        #         'net_inflow_medium_orders_net': i[10],  # 支付的其他与经营活动有关的现金
-        #         'net_inflow_medium_orders_net_share': i[11],  # 经营活动现金流出小计
-        #         'net_small_order_inflow_net': i[12],  # 经营活动产生的现金流量净额
-        #         'small_single_net_inflow_net_share': i[13],  # 投资活动产生的现金流量
-        #         'small_single_net_inflow_net_share': i[13],  # 收回投资所收到的现金
-        #         'small_single_net_inflow_net_share': i[13],  # 取得投资收益所收到的现金
-        #         'small_single_net_inflow_net_share': i[13],  # 处置固定资产、无形资产和其他长期资产所收回的现金净额
-        #         'small_single_net_inflow_net_share': i[13],  # 处置子公司及其他营业单位收到的现金净额
-        #         'small_single_net_inflow_net_share': i[13],  # 投资活动产生的现金流量
-        #         'small_single_net_inflow_net_share': i[13],  # 投资活动产生的现金流量
-        #         'small_single_net_inflow_net_share': i[13],  # 投资活动产生的现金流量
-        #     })
+class StockFinancialReports(BaseModel):
+    id: str  # 股票代码
+    type: int  # 1 资产负债表, 2 利润表, 3 现金流量表
 
+
+# 财报
+@app.post("/stock_financial_reports", status_code=200)
+async def stock_financial_report(stock_info: StockFinancialReports, response: Response):
+    try:
+        symbol = "现金流量表"
+        if stock_info.type == 2:
+            symbol = "利润表"
+        elif stock_info.type == 3:
+            symbol = "现金流量表"
+        market, stock_code = await utils.stock_id_sp_ak(stock_info.id)
+        stock_financial_report_sina_df = ak.stock_financial_report_sina(stock=stock_code, symbol=symbol)
         return {
-            "balance_sheet": balance_sheets,
+            "stock_financial_reports_csv": stock_financial_report_sina_df.to_csv(),
         }
     except Exception as e:
         response.status_code = 400
@@ -548,12 +532,254 @@ async def stock_financial_report(stock_code: str, response: Response):
 
 
 # 财务摘要
+@app.get("/stock_financial_summary/{stock_code}", status_code=200)
+async def stock_financial_summary(stock_code: str, response: Response):
+    try:
+        market, stock_code = await utils.stock_id_sp_ak(stock_code)
+        balance_sheet = ak.stock_financial_abstract(stock=stock_code)
+        return {
+            "balance_sheet_csv": balance_sheet.to_csv(),
+        }
+    except Exception as e:
+        response.status_code = 400
+        return e
 
-# 基金持股
+
+# 财务指标
+@app.get("/stock_financial_indicators/{stock_code}", status_code=200)
+async def stock_financial_indicators(stock_code: str, response: Response):
+    try:
+        market, stock_code = await utils.stock_id_sp_ak(stock_code)
+        stock_financial_analysis_indicator_df = ak.stock_financial_analysis_indicator(stock=stock_code)
+        return {
+            "stock_financial_analysis_indicator_df_csv": stock_financial_analysis_indicator_df.to_csv(),
+        }
+    except Exception as e:
+        response.status_code = 400
+        return e
+
+
+# 基金持股v1
+@app.get("/stock_fund_holdings_v1/{stock_code}", status_code=200)
+async def stock_fund_holdings_v1(stock_code: str, response: Response):
+    try:
+        market, stock_code = await utils.stock_id_sp_ak(stock_code)
+        stock_fund_stock_holder = ak.stock_fund_stock_holder(stock=stock_code)
+        stock_fund_stock_holders = []
+        for i in stock_fund_stock_holder.values:
+            stock_fund_stock_holders.append({
+                "fund_name": i[0],  # 基金名称
+                'fund_code': i[1],  # 基金代码
+                'number_positions': i[2],  # 持仓数量(股)
+                'percentage_outstanding_shares': i[3],  # 占流通股比例(%)
+                'market_value_shareholdings': i[4],  # 持股市值（元）
+                'deadline': i[5],  # 截止日期
+            })
+
+        return stock_fund_stock_holders
+    except Exception as e:
+        response.status_code = 400
+        return e
+
+
+class StockFundHoldingsList(BaseModel):
+    symbol: int  # 1 "基金持仓",2 "QFII持仓",3 "社保持仓",4 "券商持仓",5 "保险持仓",6 "信托持仓"}
+    date: str  # date="20200630"; 财报发布日期, xxxx-03-31, xxxx-06-30, xxxx-09-30, xxxx-12-31
+
+
+# 机构持股LIST
+@app.post("/stock_fund_holdings_list", status_code=200)
+async def stock_fund_holdings_list(info_code: StockFundHoldingsList, response: Response):
+    try:
+        symbol = "基金持仓"
+        if info_code.symbol == 2:
+            symbol = "QFII持仓"
+        elif info_code.symbol == 3:
+            symbol = "社保持仓"
+        elif info_code.symbol == 4:
+            symbol = "券商持仓"
+        elif info_code.symbol == 5:
+            symbol = "保险持仓"
+        elif info_code.symbol == 6:
+            symbol = "信托持仓"
+
+        stock_fund_stock_holder = ak.stock_report_fund_hold(symbol=symbol, date=info_code.date)
+        stock_fund_stock_holders = []
+        for i in stock_fund_stock_holder.values:
+            stock_fund_stock_holders.append({
+                "serial_number": i[0],  # 序号
+                'stock_code': i[1],  # 股票代码
+                'stock_name': i[2],  # 股票简称
+                'number_fund_holders': i[3],  # 持有基金家数
+                'total_number_shares_held': i[4],  # 持股总数
+                'market_value_shareholdings': i[5],  # 持股市值
+                'change_shareholding': i[5],  # 持股变化
+                'change_shareholding_value': i[5],  # 持股变动数值
+                'percentage_change_shareholding': i[5],  # 持股变动比例
+            })
+
+        return stock_fund_stock_holders
+    except Exception as e:
+        response.status_code = 400
+        return e
+
+
+# 主要股东
+@app.get("/stock_major_shareholders/{stock_code}", status_code=200)
+async def stock_major_shareholders(stock_code: str, response: Response):
+    try:
+        market, stock_code = await utils.stock_id_sp_ak(stock_code)
+        stock_main_stock_holder_df = ak.stock_main_stock_holder(stock=stock_code)
+        stock_main_stock_holder_dfs = []
+        for i in stock_main_stock_holder_df.values:
+            stock_main_stock_holder_dfs.append({
+                "num": i[0],  # 编号
+                'shareholder_name': i[1],  # 股东名称
+                'number_positions': i[2],  # 持股数量(股)
+                'shareholding_ratio': i[3],  # 持股比例(%)
+                'nature_share_capital': i[4],  # 股本性质
+                'end_date': i[5],  # 截至日期
+                'announcement_date': i[6],  # 公告日期
+                'shareholder_description': i[7],  # 股东说明
+                'total_number_shareholders': i[8],  # 股东总数
+                'average_number_shares_held': i[9],  # 平均持股数
+            })
+
+        r = json.dumps(stock_main_stock_holder_dfs)
+        return Response(content=r, media_type="application/json")
+    except Exception as e:
+        response.status_code = 400
+        return e
+
+
+# 机构持股一览表
+# time: time="20211"; 从 2008 年开始, {"一季报":1, "中报":2 "三季报":3 "年报":4}, e.g., "20191", 其中的 1 表示一季报; "20193", 其中的 3 表示三季报;
+@app.get("/stock_list_institutional_holdings/{time}", status_code=200)
+async def stock_list_institutional_holdings(time: str, response: Response):
+    try:
+        stock_institute_hold_df = ak.stock_institute_hold(quarter=time)
+        stock_institute_hold_dfs = []
+        for i in stock_institute_hold_df.values:
+            stock_institute_hold_dfs.append({
+                "code": i[0],  # 证券代码
+                'name': i[1],  # 证券简称
+                'number_institutions': i[2],  # 机构数
+                'change_number_institutions': i[3],  # 机构数变化
+                'shareholding_ratio': i[4],  # 持股比例
+                'increase_shareholding': i[5],  # 持股比例增幅
+                'percentage_outstanding_shares': i[6],  # 占流通股比例
+                'increase_percentage_outstanding_shares': i[7],  # 占流通股比例增幅
+            })
+
+        return stock_institute_hold_dfs
+    except Exception as e:
+        response.status_code = 400
+        return e
+
+
+class StockListInstitutionalHoldings(BaseModel):
+    id: str  # 股票代码
+    quarter: str  # time="20211"; 从 2008 年开始, {"一季报":1, "中报":2 "三季报":3 "年报":4}, e.g., "20191", 其中的 1 表示一季报; "20193", 其中的 3 表示三季报;
+
+
+# 机构持股一览表
+@app.post("/stock_list_institutional_holdings", status_code=200)
+async def stock_list_institutional_holdings(stock_info: StockListInstitutionalHoldings, response: Response):
+    try:
+        market, stock_code = await utils.stock_id_sp_ak(stock_info.id)
+        stock_institute_hold_detail_df = ak.stock_institute_hold_detail(stock=stock_code, quarter=stock_info.quarter)
+        stock_institute_hold_detail_dfs = []
+        for i in stock_institute_hold_detail_df.values:
+            stock_institute_hold_detail_dfs.append({
+                "type_holding_institution": i[0],  # 持股机构类型
+                'shareholding_institution_code': i[1],  # 持股机构代码
+                'abbreviations_shareholding_institutions': i[2],  # 持股机构简称
+                'full_name_shareholding_institution': i[3],  # 持股机构全称
+                'number_shares_held': i[4],  # 持股数
+                'latest_shareholding': i[5],  # 最新持股数
+                'shareholding_ratio': i[6],  # 持股比例
+                'latest_shareholding_ratio': i[7],  # 最新持股比例
+                'percentage_outstanding_shares': i[8],  # 占流通股比例
+                'latest_percentage_shares_outstanding': i[9],  # 最新占流通股比例
+                'increase_shareholding_ratio': i[10],  # 持股比例增幅
+                'increase_percentage_outstanding_shares': i[11],  # 占流通股比例增幅
+            })
+
+        return stock_institute_hold_detail_dfs
+    except Exception as e:
+        response.status_code = 400
+        return e
+
 
 # 机构推荐池
+@app.get("/stock_institute_recommend/{indicator}", status_code=200)
+async def stock_institute_recommend(indicator: str, response: Response):
+    try:
+        indicator_str = "行业关注度"
+        if indicator == "2":
+            indicator_str = "最新投资评级"
+        elif indicator == "3":
+            indicator_str = "上调评级股票"
+        elif indicator == "4":
+            indicator_str = "下调评级股票"
+        elif indicator == "5":
+            indicator_str = "股票综合评级"
+        elif indicator == "6":
+            indicator_str = "首次评级股票"
+        elif indicator == "7":
+            indicator_str = "下调评级股票"
+        elif indicator == "8":
+            indicator_str = "机构关注度"
+        elif indicator == "9":
+            indicator_str = "行业关注度"
+        elif indicator == "10":
+            indicator_str = "投资评级选股"
+
+        stock_institute_recommend_df = ak.stock_institute_recommend(indicator=indicator_str)
+        stock_institute_recommend_dfs = []
+        for i in stock_institute_recommend_df.values:
+            stock_institute_recommend_dfs.append({
+                "num": i[0],  # 编号
+                "name": i[1],  # 行业名称
+                'attention': i[2],  # 关注度
+                'num_stocks_follow': i[3],  # 关注股票数
+                'number_buy_ratings': i[4],  # 买入评级数
+                'num_hold_ratings': i[5],  # 增持评级数
+                'num_neutral_ratings': i[6],  # 中性评级数
+                'num_ratings_reduced': i[3],  # 减持评
+            })
+
+        return stock_institute_recommend_dfs
+    except Exception as e:
+        response.status_code = 400
+        return e
+
 
 # 股票评级记录
+@app.get("/stock_institute_recommend_detail/{stock_code}", status_code=200)
+async def stock_institute_recommend_detail(stock_code: str, response: Response):
+    try:
+        market, stock_code = await utils.stock_id_sp_ak(stock_code)
+        stock_institute_recommend_detail_df = ak.stock_institute_recommend_detail(stock=stock_code)
+        stock_institute_recommend_detail_dfs = []
+        for i in stock_institute_recommend_detail_df.values:
+            stock_institute_recommend_detail_dfs.append({
+                "stock_code": i[0],  # 股票代码
+                "stock_name": i[1],  # 股票名称
+                'target_price': i[2],  # 目标价
+                'latest_ratings': i[3],  # 最新评级
+                'rating_agencies': i[4],  # 评级机构
+                'fraudster': i[5],  # 分析师
+                'industry': i[6],  # 行业
+                'rating_date': i[3],  # 评级日期
+            })
+
+        r = json.dumps(stock_institute_recommend_detail_dfs)
+        return Response(content=r, media_type="application/json")
+    except Exception as e:
+        response.status_code = 400
+        return e
+
 
 # 龙虎榜
 
